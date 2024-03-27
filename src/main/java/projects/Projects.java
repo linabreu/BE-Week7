@@ -1,25 +1,27 @@
 package projects;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
-import java.lang.*;
 import java.math.BigDecimal;
 
-import projects.dao.DbConnection;
 import projects.entity.Project;
 import projects.exception.DbException;
 import projects.service.ProjectService;
 
 public class Projects {
-	//Connection conn = DbConnection.getConnection();
 	private Scanner scanner = new Scanner(System.in);
 	private ProjectService projectService = new ProjectService();
+	private Project currentProject;
+
 
 	//@formatter:off
 	private static List <String> operations = List.of(
-	"1. Add a Project"
+	"1. Add a Project", 
+	"2. List Projects",
+	"3. Select a Project",
+	"4. Update project details",
+	"5. Delete a project"
 			
 	);
 	
@@ -35,33 +37,112 @@ public class Projects {
 		boolean done = false;
 		while(!done)
 		{
-
-			int selection = getUserSelection();
-			switch(selection) 
+			try
 			{
-			  case 1:
-				 createProject();
-			    break;
-			  case 2:
-			    // code block
-			    break;
-			  case 3:
-				    // code block
+				int selection = getUserSelection();
+				switch(selection) 
+				{
+				  case 1:
+					 createProject();
 				    break;
-			  case 4:
-				    // code block
+				  case 2:
+				    listProjects();
 				    break;
-			  case 5:
-				    // code block
-				    break;
-			  default:
-			    // code block
+				  case 3:
+					  selectProject(selection);
+					break;
+				  case 4:
+					  updateProjectDetails();
+					    break;
+				  case 5:
+					    deleteProject();
+					    break;
+				  default:
+					System.out.println("Thank you for using the project service app! See you next time!");
+					done = true;
+				}
+	
 			}
-
+			catch (Exception e)
+			{
+				System.out.println("Error! " + e + " Please try again!");
+			}
 		}
 		
 	}
-	
+	//delete method
+	private void deleteProject() {
+		listProjects();
+		
+		Integer idToDelete = getIntInput("Enter the id of the project to be deleted");
+		projectService.deleteProject(idToDelete);
+		System.out.println("Project id: " + idToDelete + " sucessfully deleted!");
+		
+		if(Objects.nonNull(currentProject) && currentProject.getProjectId().equals(idToDelete))
+		{
+			currentProject = null;
+		}
+
+		
+	}
+    //update method
+	private void updateProjectDetails() {
+		if (Objects.isNull(currentProject))
+		{
+			System.out.println("\nPlease select a project first!");
+			return;
+		}
+			System.out.println("Current project settings:");
+			
+			String projectName = getStringInput("Enter Project Name [" + currentProject.getProjectName()+ "]");
+			BigDecimal projectEstimatedHours = getDecimalInput("Enter Estimated Hours [" + currentProject.getEstimatedHours() +"]");
+			BigDecimal projectActualHours = getDecimalInput("Enter Actual Hours [" + currentProject.getEstimatedHours()+ "] ");
+			Integer projectDifficulty = getIntInput("Enter Difficulty [" + currentProject.getDifficulty() + "] ");
+			String projectNotes = getStringInput("Enter Notes [" + currentProject.getNotes()+ "] ");
+			
+			Project projectToUpdate = new Project();
+			
+			projectToUpdate.setProjectName(Objects.isNull(projectName)
+					? currentProject.getProjectName(): projectName);
+			
+			projectToUpdate.setEstimatedHours(Objects.isNull(projectEstimatedHours)
+					? currentProject.getEstimatedHours(): projectEstimatedHours);
+			
+			projectToUpdate.setActualHours(Objects.isNull(projectEstimatedHours)
+					? currentProject.getActualHours(): projectActualHours);
+			
+			projectToUpdate.setDifficulty(Objects.isNull(projectDifficulty)
+					? currentProject.getDifficulty(): projectDifficulty);
+			
+			projectToUpdate.setNotes(Objects.isNull(projectNotes)
+					? currentProject.getNotes(): projectNotes);
+			
+			projectToUpdate.setProjectId(currentProject.getProjectId());
+			
+			projectService.modifyProjectDetails(projectToUpdate);
+			
+			currentProject = projectService.fetchProjectById(projectToUpdate.getProjectId());
+		
+	}
+
+	//select project
+	private void selectProject(Integer projectID) {
+		listProjects();
+		Integer projectId = getIntInput("Enter a project ID to select a project");
+		
+		currentProject = null; 
+		currentProject = projectService.fetchProjectById(projectId);
+		
+	}
+
+	//list all projects
+	private void listProjects() {
+		List<Project> projects = projectService.fetchAllProjects();
+		System.out.println("\nProjects:");
+		projects.forEach(project -> System.out.println(project.getProjectId() + ". " + project.getProjectName()));
+		
+	}
+
 	//create project
 	private void createProject() {
 		String projectName = getStringInput("Enter Project Name: ");
@@ -113,6 +194,15 @@ public class Projects {
 		System.out.println();
 		System.out.println("These are the available selections. Press the Enter key to quit");
 		operations.forEach(line -> System.out.println(" " + line));
+		
+		if(Objects.isNull(currentProject))
+		{
+			System.out.println("\nYou are not working with a project!");
+		}
+		else
+		{
+			System.out.println("\nYou are working with project: " + currentProject);
+		}
 	}
 	
 	//get integer input
